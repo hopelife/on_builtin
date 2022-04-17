@@ -16,6 +16,7 @@
 ##@@ Built-In Package/Module
 ##------------------------------------------------------------
 import os, sys
+from pathlib import Path
 import re, json
 from glob import glob
 from itertools import product
@@ -550,8 +551,13 @@ def _read_file(path, out_type="str", encoding="utf-8", errors='ignore'):
     Usages:
         - _read_file("./folder/fname1.ext", out_type="line")
     """    
+    ext = Path(path).suffix
     with open(path, "r", encoding=encoding, errors=errors) as f:
-        if out_type == "str":
+        if ext in ['.yml', '.yaml']:
+            data = yaml.load(open(path, "r", encoding="UTF-8"), Loader=yaml.FullLoader)
+        elif ext in ['.json']:
+            data = json.load(f)
+        elif out_type == "str":
             data = f.read()
         elif out_type == "list" or out_type == "line":
             data = f.readlines()
@@ -559,15 +565,13 @@ def _read_file(path, out_type="str", encoding="utf-8", errors='ignore'):
             data = json.load(f)
         elif out_type == "df" or out_type == "frame":
             data = _to_df(json.load(f))
-        elif (out_type == "dict" or out_type == "json") and ('.yml' in path[-6:] or '.yaml' in path[-6:]):
-            yaml.load(open(path, "r", encoding="UTF-8"), Loader=yaml.FullLoader)
         else:
             data = f.read()
 
     return data
 
 
-def _write_file(data, path, mode="w", encoding="utf-8", start="", end="", ext=True):
+def _write_file(data, path, mode="w", encoding="utf-8", start="", end=""):
     """_write_file: data를 파일로 저장
     Desc:
         - 파일 확장자(json/csv/xlsx/...)별 자동 저장
@@ -579,36 +583,33 @@ def _write_file(data, path, mode="w", encoding="utf-8", start="", end="", ext=Tr
 
     Usages:
         - _write_file([{'a': 'b'}, 5], "./folder1/fname2.ext", encoding="utf-8")
-    """    
+    """
+    ext = Path(path).suffix
     if "@" in path:  # NOTE!!: path = "<sheet_name>@<file_path>"
         (sheet_name, path) = path.split("@", 1)
 
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    folder = os.path.dirname(path)
+    if folder:
+        os.makedirs(folder, exist_ok=True)
 
-    _ext_ = {'json': '.json', 'excel': '.xls', 'csv': '.csv'}  # 지정된 파일타입
-    _ext = None
-    for k, v in _ext_.items():
-        if v in path[-6:]:
-            _ext = k
-
-    if ext and _ext:
-        if _ext == 'json':
-            json.dump(data, open(path, mode, encoding=encoding), ensure_ascii=False, indent="\t")
-        elif _ext == 'csv':
-            df = _to_df(data)
-            if not os.path.exists(path):
-                # print("csv, write")
-                df.to_csv(path, index=False, mode='w', header=True)
-            else:
-                # print("csv, append")
-                df.to_csv(path, index=False, mode='a', header=False)
-        elif _ext == 'excel':
-            if not os.path.exists(path):
-                with pd.ExcelWriter(path, mode='w', engine='openpyxl') as writer:
-                    _to_df(data).to_excel(writer, sheet_name=sheet_name, index=False)
-            else:
-                with pd.ExcelWriter(path, mode='a', engine='openpyxl', if_sheet_exists='replace') as writer:
-                    _to_df(data).to_excel(writer, sheet_name=sheet_name, index=False)
+    if ext == '.json':
+        json.dump(data, open(path, mode, encoding=encoding), ensure_ascii=False, indent="\t")
+    elif ext in ['.yml', '.yaml']:
+        with open(path, 'w', encoding="utf-8") as file:
+            yaml.dump(data, file)
+    elif ext == '.csv':
+        df = _to_df(data)
+        if not os.path.exists(path):
+            df.to_csv(path, index=False, mode='w', header=True)
+        else:
+            df.to_csv(path, index=False, mode='a', header=False)
+    elif ext in ['.xls', '.xlsx']:
+        if not os.path.exists(path):
+            with pd.ExcelWriter(path, mode='w', engine='openpyxl') as writer:
+                _to_df(data).to_excel(writer, sheet_name=sheet_name, index=False)
+        else:
+            with pd.ExcelWriter(path, mode='a', engine='openpyxl', if_sheet_exists='replace') as writer:
+                _to_df(data).to_excel(writer, sheet_name=sheet_name, index=False)
     else:
         if mode == "wb":
             with open(path, mode) as f:
@@ -619,6 +620,87 @@ def _write_file(data, path, mode="w", encoding="utf-8", start="", end="", ext=Tr
             with open(path, mode, encoding="utf-8") as f:
                 data = start + data + end
                 f.write(data)
+
+
+def _update_file(data, path, encoding="utf-8"):
+    """update file by date
+    .json / .yaml / .py
+    """
+    ext = Path(path).suffix
+    with open(path, 'r') as f:
+        if ext == '.json':
+            json.dump(data, open(path, encoding=encoding), ensure_ascii=False, indent="\t")
+        elif ext in ['.yml', '.yaml']:
+            _data = yaml.load(f, Loader=yaml.FullLoader)
+            if isinstance(_data, dict):
+                _data = dict(_data, **data)
+            elif isinstance(_data, list) and isinstance(data, list):
+                _data += data
+            elif isinstance(_data, list) and isinstance(data, dict):
+                _data += [data]
+
+            with open("./yaml_test.yml", 'w') as f:
+                yaml.dump(_data, f)
+        elif ext == '.csv':
+            df = _to_df(data)
+            if not os.path.exists(path):
+                df.to_csv(path, index=False, mode='w', header=True)
+            else:
+                df.to_csv(path, index=False, mode='a', header=False)
+
+
+# def _write_file(data, path, mode="w", encoding="utf-8", start="", end="", ext=True):
+#     """_write_file: data를 파일로 저장
+#     Desc:
+#         - 파일 확장자(json/csv/xlsx/...)별 자동 저장
+
+#     Args:
+#         - data(str|dict|list|dataframe): 저장할 data
+#         - path(str): 저장할 파일 경로(파일명 포함)
+#         - encoding(str, "utf-8"): 인코딩: utf-8|cp949|euc-kr
+
+#     Usages:
+#         - _write_file([{'a': 'b'}, 5], "./folder1/fname2.ext", encoding="utf-8")
+#     """
+#     if "@" in path:  # NOTE!!: path = "<sheet_name>@<file_path>"
+#         (sheet_name, path) = path.split("@", 1)
+
+#     os.makedirs(os.path.dirname(path), exist_ok=True)
+
+#     _ext_ = {'json': '.json', 'excel': '.xls', 'csv': '.csv'}  # 지정된 파일타입
+#     _ext = None
+#     for k, v in _ext_.items():
+#         if v in path[-6:]:
+#             _ext = k
+
+#     if ext and _ext:
+#         if _ext == 'json':
+#             json.dump(data, open(path, mode, encoding=encoding), ensure_ascii=False, indent="\t")
+#         elif _ext == 'csv':
+#             df = _to_df(data)
+#             if not os.path.exists(path):
+#                 # print("csv, write")
+#                 df.to_csv(path, index=False, mode='w', header=True)
+#             else:
+#                 # print("csv, append")
+#                 df.to_csv(path, index=False, mode='a', header=False)
+#         elif _ext == 'excel':
+#             if not os.path.exists(path):
+#                 with pd.ExcelWriter(path, mode='w', engine='openpyxl') as writer:
+#                     _to_df(data).to_excel(writer, sheet_name=sheet_name, index=False)
+#             else:
+#                 with pd.ExcelWriter(path, mode='a', engine='openpyxl', if_sheet_exists='replace') as writer:
+#                     _to_df(data).to_excel(writer, sheet_name=sheet_name, index=False)
+#     else:
+#         if mode == "wb":
+#             with open(path, mode) as f:
+#                 f.write(data)
+#         else:
+#             if type(data) == dict or type(data) == list:
+#                 data = json.dumps(data, ensure_ascii=False, indent="\t")
+#             with open(path, mode, encoding="utf-8") as f:
+#                 data = start + data + end
+#                 f.write(data)
 
 
 def _strip_file(path, save=True):
@@ -721,45 +803,12 @@ def _exec(script, sep=';', rep={}, con=" _if "):
 
 if __name__ == "__main__":
     pass
-    ## NOTE: test _to_df()
-    # data = [
-    #     ('no', 'res_code', 'desc(ResFile)', 'desc(devCenter)', 'usage', 'priority', 'goods', 'remark', 'actual use', 'uses', 'limit_1sec', 'limit_10min'), 
-    #     (1, 'CDPCQ04700', '계좌 거래내역', '계좌 거래내역', 'order', 5, '주식', None, 'order.py', None, 1, 200), 
-    #     (2, 'CEXAQ21100', '유렉스 주문체결내역조회', 'EUREX 야간옵션 주문체결내역 조회', 'order', 5, '선물/옵션', None, None, None, 1, 200), 
-    #     (3, 'CEXAQ21200', '유렉스 주문가능 수량/금액 조회', 'EUREX 야간옵션 주문가능 수량/금액 조회', 'order', 5, '선물/옵션', None, None, None, 1, 200)
-    # ]
-    # print(_to_df(data))
-    # _file_list("../../mp_util", find="*", recursive=True)
-    # r = _folder_list("../../mp_util", recursive=False)
-    from pathlib import Path
-
-    # for path in Path("C:\\Dev\\mp_stock\\mp_stock\\specs").rglob('*.json|*.xlsx'):
-    #     print(path)
-
-    # files = (p.resolve() for p in Path(path).glob("**/*") if p.suffix in {".c", ".cc", ".cpp", ".hxx", ".h"})
-    path = "C:\\Dev\\mp_stock\\mp_stock"
-    # r = list(str(p.resolve()) for p in Path(path).glob("**/*") if p.suffix in {".json", ".xlsx"})
-    # r = list(p.resolve() for p in Path(path).glob("**/*") if p.suffix in {"/"})
-
-    # p = Path('.')
-    # r = list(p.glob('**/*.py'))
-    # r = _file_list("C:\\Dev\\mp_stock\\mp_stock\\specs", find="*\.json|*\.xlsx", recursive=False)
-    # print(r)
-
-    # r = _file_list(path, finds=["*.json", "*.xlsx", "*.py"], recursive=True)
-    # r = _folder_list(path, ["__pycache__"], recursive=True)
-    r = _folder_list(path, ["__pycache__", "xlsx", "specs"], recursive=True)
-    # r = _folder_list(path, [], recursive=True)
-
-    print(r)
-
-    # ## NOTE: module, function 불러오기(by문자열)
-    # module = __import__('foo')
-    # getattr(module, 'bar')(a, b)
-    # def _TA(name, *args, **kwargs):
-    #     """ta 모듈 함수 실행(by 문자열)
-    #     _TA("momentum.rsi", df.Close, period)
-    #     """
-    #     (module, func) = name.split(".", 1)
-    #     return getattr(globals()[module], func)(*args, **kwargs)
+    # data = dict(
+    #     a = 1,
+    #     b = [1, 2, '3']
+    # )
+    path = "./yaml_test.yml"
+    data = {'d': 'F'}
+    # _write_file(data, path, mode="w", encoding="utf-8", start="", end="")
+    _update_file(data, path, encoding="utf-8")
 

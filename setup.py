@@ -4,7 +4,7 @@ setup(
     name='on_builtin',
     version="0.1.2",
     description='Package to use builtin function',
-    url='https://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@github.com/hopelife/on_builtin.git',
+    url='git+https://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@github.com/hopelife/on_builtin.git',
     author='Moon Jung Sam',
     author_email='monblue@snu.ac.kr',
     license='MIT',
