@@ -22,7 +22,7 @@ from itertools import product
 
 ##@@ External Package/Module
 ##------------------------------------------------------------
-# import yaml
+import yaml
 import pandas as pd
 
 ##@@ User Package/Module
@@ -559,8 +559,8 @@ def _read_file(path, out_type="str", encoding="utf-8", errors='ignore'):
             data = json.load(f)
         elif out_type == "df" or out_type == "frame":
             data = _to_df(json.load(f))
-        # elif (out_type == "dict" or out_type == "json") and ('.yml' in path[-6:] or '.yaml' in path[-6:]):
-        #     yaml.load(open(path, "r", encoding="UTF-8"), Loader=yaml.FullLoader)
+        elif (out_type == "dict" or out_type == "json") and ('.yml' in path[-6:] or '.yaml' in path[-6:]):
+            yaml.load(open(path, "r", encoding="UTF-8"), Loader=yaml.FullLoader)
         else:
             data = f.read()
 
