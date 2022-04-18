@@ -101,7 +101,7 @@ def _insert_join(patterns=[], replacements=[], content=""):
     result = splits[0]
     for i, repl in enumerate(replacements):
         result = repl.join([result, splits[i+1]])
-    
+
     return result
 
 

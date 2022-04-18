@@ -5,7 +5,7 @@ python utility package for builtin datatypes, functions
 
 ## github
 ```
-c:\Dev\__py_on> git clone https://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@github.com/hopelife/on_builtin.git
+c:\Dev\__py_on> git clone https://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@github.com/hopelife/on_builtin.git
 c:\Dev\__py_on\on_builtin> git config user.name hopelife
 c:\Dev\__py_on\on_builtin> git config user.email deverlife@gmail.com
 ```
