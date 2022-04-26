@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='on_builtin',
-    version="0.1.2",
+    version="0.1.3",
     description='Package to use builtin function',
     url='git+https://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@github.com/hopelife/on_builtin.git',
     author='Moon Jung Sam',

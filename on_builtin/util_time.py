@@ -15,9 +15,9 @@
 # import os, sys
 # import re, json
 import time
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 import threading
-
+import pytz
 
 TODAY = datetime.now().strftime("%Y%m%d")
 
@@ -42,6 +42,19 @@ DEFAULT_INTV = 2
 
 ##@@ 시간, 날짜
 ##------------------------------------------------------------
+def _datetime_to_seoul(_datetime, format="%Y-%m-%dT%H:%M:%S", out_type="datetime"):
+    """Asia/Seoul timezone으로 변경 '2021-11-05T03:03:00.000Z' -> '2021-11-05 12:03:00'
+    out_type: datetime / str
+    """
+    dt = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=9) if len(_datetime) < 16 else datetime.strptime(_datetime, f"{format}.%fZ") + timedelta(hours=9) if _datetime[-1].upper() == 'Z' else datetime.strptime(_datetime, format.replace('T', ' '))
+    return dt if out_type[0].lower() == 'd' else dt.strftime(format.replace('T', ' '))
+
+
+def _is_later_datetime(dt1, dt2, format="%Y-%m-%dT%H:%M:%S"):
+    """dt1이 dt2보다 나중인가?
+    """
+    return _datetime_to_seoul(dt1) > _datetime_to_seoul(dt2)
+
 
 def _to_date(dt, format="%Y%m%d"):
     """date 형식으로 변경

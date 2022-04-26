@@ -331,6 +331,15 @@ def _sort_nesteds(path, nesteds):
 
 ##@@ dict / dicts / lists / df
 ##------------------------------------------------------------
+def _dict_key_sort(_dict, keys):
+    """dictionary key 필터/순서 변경
+    _dict = {"b": 2, "c": 3, "a": 1}, keys = ['a', 'c']
+    return: {'a': 1, 'c': 3}
+    """
+    filtered = [(k, v) for k, v in _dict.items() if k in keys]
+    return {k:v for (k, v) in sorted(filtered, key=lambda x: keys.index(x[0]))}
+
+
 def _dicts_to_dict(dicts=[], key=''):
     """dicts -> dict (key: )
 
