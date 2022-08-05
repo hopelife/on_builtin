@@ -120,7 +120,7 @@ def _to_py_new(datas, path=None, sep="\n\n"):
     for name, data in zip(datas.keys(), datas.values()):
         content += f"{name} = {json.dumps(data, ensure_ascii=False, indent=4)}{sep}"
 
-    with open(path, "w") as f:
+    with open(path, "w+") as f:
         f.write(content)
 
 

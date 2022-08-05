@@ -50,7 +50,7 @@ def _datetime_to_seoul(_datetime, format="%Y-%m-%dT%H:%M:%S", out_type="datetime
     return dt if out_type[0].lower() == 'd' else dt.strftime(format.replace('T', ' '))
 
 
-def _is_later_datetime(dt1, dt2, format="%Y-%m-%dT%H:%M:%S"):
+def _is_later_datetime(dt1, dt2):
     """dt1이 dt2보다 나중인가?
     """
     return _datetime_to_seoul(dt1) > _datetime_to_seoul(dt2)

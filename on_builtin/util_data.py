@@ -256,6 +256,7 @@ def _inserts(ins=[], target=[]):
         target.insert(pos+i, val)
     return target
 
+
 ##@@ nested
 ##------------------------------------------------------------
 def _get_value_nested(path, nested):
